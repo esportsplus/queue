@@ -1,0 +1,19 @@
+{
+    "author": "ICJR",
+    "dependencies": {},
+    "devDependencies": {
+        "@esportsplus/typescript": "^0.9.2"
+    },
+    "main": "./build/index.js",
+    "name": "@esportsplus/queue",
+    "private": false,
+    "scripts": {
+        "build": "tsc && tsc-alias",
+        "-": "-",
+        "prepare": "pnpm build",
+        "prepublishOnly": "pnpm build"
+    },
+    "type": "module",
+    "types": "./build/index.d.ts",
+    "version": "0.0.1"
+}
