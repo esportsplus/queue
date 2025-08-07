@@ -31,14 +31,19 @@ class Queue<T> {
         if (this.tail === null) {
             this.head = this.tail = new Node<T>(this.preallocate);
         }
+        // Clear current indexes to reuse existing arrays if empty
+        else if (this.size === 0) {
+            this.headIndex = 0;
+            this.tailIndex = 0;
+        }
         // Last array is full, add a new node
         else if (this.tailIndex === this.preallocate) {
             this.tail = this.tail.next = new Node<T>(this.preallocate);
             this.tailIndex = 0;
         }
 
-        this.tail.data[this.tailIndex++] = value;
         this.size++;
+        this.tail.data[this.tailIndex++] = value;
     }
 
     clear() {
