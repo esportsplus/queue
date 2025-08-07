@@ -1,6 +1,5 @@
 class Node<T> {
     data: (T | undefined)[];
-    index: number = 0;
     next: Node<T> | null = null;
 
     constructor(size: number) {
@@ -10,9 +9,11 @@ class Node<T> {
 
 class Queue<T> {
     private head: Node<T> | null = null;
+    private headIndex = 0;
     private preallocate: number;
     private size: number = 0;
     private tail: Node<T> | null = null;
+    private tailIndex = 0;
 
 
     constructor(preallocate: number) {
@@ -31,18 +32,29 @@ class Queue<T> {
             this.head = this.tail = new Node<T>(this.preallocate);
         }
         // Last array is full, add a new node
-        else if (this.tail.index === this.preallocate) {
+        else if (this.tailIndex === this.preallocate) {
             this.tail = this.tail.next = new Node<T>(this.preallocate);
+            this.tailIndex = 0;
         }
 
-        this.tail.data[this.tail.index++] = value;
+        this.tail.data[this.tailIndex++] = value;
         this.size++;
     }
 
     clear() {
+        while (this.head !== null) {
+            let next = this.head.next;
+
+            this.head.data.fill(undefined);
+            this.head.next = null;
+            this.head = next;
+        }
+
         this.head = null;
+        this.headIndex = 0;
         this.size = 0;
         this.tail = null;
+        this.tailIndex = 0;
     }
 
     next(): T | undefined {
@@ -51,21 +63,27 @@ class Queue<T> {
         }
 
         let head = this.head!,
-            value = head.data[head.index];
+            value = head.data[this.headIndex];
 
-        // This step is optional and may not be required.
-        // It doesn't actually have a significant impact on the behavior of the queue, but is added for better memory management.
-        head.data[head.index] = undefined;
-        head.index++;
+        // This step is optional. It doesn't have a significant impact
+        // on the behavior of the queue, but it's added for better
+        // memory management.
+        head.data[this.headIndex] = undefined;
+
+        this.headIndex++;
         this.size--;
 
         // If the current array is empty, move to the next node
-        if (head.index === this.preallocate) {
+        if (this.headIndex === this.preallocate) {
             this.head = head.next;
+            this.headIndex = 0;
+
+            head.next = null;
 
             // If we removed the last node, reset the tail as well
             if (this.head === null) {
                 this.tail = null;
+                this.tailIndex = 0;
             }
         }
 
