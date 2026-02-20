@@ -7,6 +7,10 @@
     "main": "./build/index.js",
     "name": "@esportsplus/queue",
     "private": false,
+    "publishConfig": {
+        "access": "restricted",
+        "provenance": false
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/esportsplus/queue"
