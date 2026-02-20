@@ -46,3 +46,4 @@ api.raf = () => {
 
 
 export default api;
+export type { Queue, Scheduler };
