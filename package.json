@@ -1,8 +1,9 @@
 {
     "author": "ICJR",
-    "dependencies": {},
     "devDependencies": {
-        "@esportsplus/typescript": "^0.29.0"
+        "@esportsplus/typescript": "^0.29.0",
+        "denque": "^2.1.0",
+        "vitest": "^4.1.1"
     },
     "main": "./build/index.js",
     "name": "@esportsplus/queue",
@@ -17,6 +18,7 @@
     },
     "scripts": {
         "build": "tsc && tsc-alias",
+        "test": "vitest run",
         "-": "-",
         "prepare": "pnpm build",
         "prepublishOnly": "pnpm build"
