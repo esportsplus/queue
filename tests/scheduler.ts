@@ -229,6 +229,85 @@ describe('Scheduler', () => {
     });
 
 
+    describe('error handling', () => {
+
+        it('task throw does not kill the scheduler — subsequent add() calls still work', () => {
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.add(() => { throw new Error('boom'); });
+
+            expect(() => captured!()).toThrow('boom');
+
+            // Scheduler should still be alive — add and flush new tasks
+            s.add(() => executed.push(1));
+
+            captured!();
+
+            expect(executed).toEqual([1]);
+        });
+
+        it('remaining tasks after the throwing task in the same flush are NOT executed', () => {
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.add(() => executed.push(1));
+            s.add(() => { throw new Error('boom'); });
+            s.add(() => executed.push(3));
+
+            expect(() => captured!()).toThrow('boom');
+
+            // Only the first task ran; task 3 was skipped due to the throw
+            expect(executed).toEqual([1]);
+
+            // Task 3 should still be in the queue and execute on next flush
+            expect(s.length).toBe(1);
+        });
+
+        it('tasks queued after the throw are executed on the next flush', () => {
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.add(() => { throw new Error('boom'); });
+            s.add(() => executed.push(2));
+
+            expect(() => captured!()).toThrow('boom');
+
+            // Task 2 remains from the aborted flush; flush again
+            captured!();
+
+            expect(executed).toEqual([2]);
+            expect(s.length).toBe(0);
+        });
+
+        it('error propagates through the scheduler callback', () => {
+            let captured: (() => void) | null = null,
+                error: Error | null = null,
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.add(() => { throw new Error('task error'); });
+
+            try {
+                captured!();
+            }
+            catch (e) {
+                error = e as Error;
+            }
+
+            expect(error).not.toBeNull();
+            expect(error!.message).toBe('task error');
+        });
+
+    });
+
+
     describe('re-entrancy', () => {
 
         it('tasks added during flush are scheduled for next flush', () => {

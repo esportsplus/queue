@@ -26,28 +26,31 @@ class Scheduler {
 
         this.state = RUNNING;
 
-        let elapsed = Date.now() - this.lastRunAt,
-            throttle = this.throttled;
+        try {
+            let elapsed = Date.now() - this.lastRunAt,
+                throttle = this.throttled;
 
-        if (!throttle || throttle.interval <= elapsed) {
-            let q = this.queue,
-                n = throttle?.limit ?? q.length;
+            if (!throttle || throttle.interval <= elapsed) {
+                let q = this.queue,
+                    n = throttle?.limit ?? q.length;
 
-            for (let i = 0; i < n; i++) {
-                let task = q.next();
+                for (let i = 0; i < n; i++) {
+                    let task = q.next();
 
-                if (!task) {
-                    break;
+                    if (!task) {
+                        break;
+                    }
+
+                    task();
                 }
 
-                task();
+                this.lastRunAt = Date.now();
             }
-
-            this.lastRunAt = Date.now();
         }
-
-        this.state = READY;
-        this.schedule();
+        finally {
+            this.state = READY;
+            this.schedule();
+        }
     }
 
 
