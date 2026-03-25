@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Queue } from '../src/queue';
 import { Scheduler } from '../src/scheduler';
@@ -126,6 +126,25 @@ describe('Scheduler', () => {
             expect(callCount).toBe(1);
         });
 
+        it('schedule() during RUNNING is no-op', () => {
+            let captured: (() => void) | null = null,
+                q = new Queue<Task>(128),
+                schedulerCalls = 0,
+                s = new Scheduler(q, (task) => { captured = task; schedulerCalls++; });
+
+            s.add(() => {
+                // During RUNNING, schedule() should be a no-op
+                s.schedule();
+            });
+
+            expect(schedulerCalls).toBe(1);
+
+            captured!();
+
+            // Scheduler callback called exactly once (initial add), not again from s.schedule() inside the task
+            expect(schedulerCalls).toBe(1);
+        });
+
     });
 
 
@@ -154,6 +173,10 @@ describe('Scheduler', () => {
 
 
     describe('throttle', () => {
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
 
         it('throttle() limits tasks per flush', () => {
             vi.useFakeTimers();
@@ -184,8 +207,6 @@ describe('Scheduler', () => {
 
             expect(executed).toEqual([1, 2, 3, 4]);
             expect(s.length).toBe(0);
-
-            vi.useRealTimers();
         });
 
         it('throttle() enforces interval between flushes', () => {
@@ -222,8 +243,51 @@ describe('Scheduler', () => {
             captured!();
 
             expect(executed).toEqual([1, 2]);
+        });
 
-            vi.useRealTimers();
+        it('throttle limit exceeding queue size stops at queue exhaustion', () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(1000);
+
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.throttle(10, 1000);
+
+            s.add(() => executed.push(1));
+            s.add(() => executed.push(2));
+            s.add(() => executed.push(3));
+
+            captured!();
+
+            // All 3 execute despite limit=10 — loop breaks when q.next() returns undefined
+            expect(executed).toEqual([1, 2, 3]);
+            expect(s.length).toBe(0);
+        });
+
+        it('throttle() called multiple times uses latest config', () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(1000);
+
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.throttle(1, 1000);
+            s.throttle(5, 1000);
+
+            s.add(() => executed.push(1));
+            s.add(() => executed.push(2));
+            s.add(() => executed.push(3));
+
+            captured!();
+
+            // Limit is now 5 (latest config), so all 3 tasks execute
+            expect(executed).toEqual([1, 2, 3]);
+            expect(s.length).toBe(0);
         });
 
     });
@@ -339,6 +403,33 @@ describe('Scheduler', () => {
 
             expect(executed).toEqual([1, 2, 3]);
             expect(s.length).toBe(0);
+        });
+
+    });
+
+
+    describe('async tasks', () => {
+
+        it('async tasks execute but are not awaited (fire-and-forget)', async () => {
+            let captured: (() => void) | null = null,
+                flag = false,
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.add(async () => {
+                await Promise.resolve();
+                flag = true;
+            });
+
+            captured!();
+
+            // Flag should NOT be set yet — scheduler does not await the promise
+            expect(flag).toBe(false);
+
+            // After a microtick the async task completes
+            await Promise.resolve();
+
+            expect(flag).toBe(true);
         });
 
     });
