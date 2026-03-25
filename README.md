@@ -151,6 +151,8 @@ Wraps a `Queue<Task>` with automatic scheduling and optional throttling.
 
 - A flush is only scheduled when the state is `READY` and the queue is non-empty
 - Re-entrant calls during `RUNNING` are no-ops; remaining items are re-scheduled after the current flush completes
+- If a task throws, the scheduler recovers — state resets to `READY` and remaining tasks are re-scheduled for the next flush. The error propagates to the scheduling backend.
+- Async tasks are fire-and-forget — `run()` calls `task()` synchronously and does not `await` the returned promise
 
 ---
 
