@@ -67,6 +67,41 @@ describe('Queue', () => {
             expect(q.next()).toBeUndefined();
         });
 
+        it('clear() on empty queue is safe', () => {
+            let q = new Queue<number>(4);
+
+            q.clear();
+
+            expect(q.length).toBe(0);
+            expect(q.next()).toBeUndefined();
+
+            q.add(1);
+
+            expect(q.length).toBe(1);
+            expect(q.next()).toBe(1);
+        });
+
+        it('multiple consecutive clear() calls are safe', () => {
+            let q = new Queue<number>(2);
+
+            q.add(1);
+            q.add(2);
+            q.add(3);
+            q.clear();
+            q.clear();
+            q.clear();
+
+            expect(q.length).toBe(0);
+            expect(q.next()).toBeUndefined();
+
+            q.add(10);
+            q.add(20);
+
+            expect(q.length).toBe(2);
+            expect(q.next()).toBe(10);
+            expect(q.next()).toBe(20);
+        });
+
         it('add() when size === 0 but tail !== null reuses existing node', () => {
             let q = new Queue<number>(2);
 
@@ -99,6 +134,23 @@ describe('Queue', () => {
             expect(q.next()).toBe(1);
             expect(q.next()).toBe(2);
             expect(q.next()).toBe(3);
+        });
+
+        it('large preallocate uses single node for many items', () => {
+            let q = new Queue<number>(1000);
+
+            for (let i = 0; i < 500; i++) {
+                q.add(i);
+            }
+
+            expect(q.length).toBe(500);
+
+            for (let i = 0; i < 500; i++) {
+                expect(q.next()).toBe(i);
+            }
+
+            expect(q.length).toBe(0);
+            expect(q.next()).toBeUndefined();
         });
 
         it('next() exhausts a node, releases to pool', () => {
