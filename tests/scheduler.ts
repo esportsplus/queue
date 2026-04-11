@@ -290,6 +290,46 @@ describe('Scheduler', () => {
             expect(s.length).toBe(0);
         });
 
+        it('throttle(0, ms) creates Infinity interval, preventing execution', () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(1000);
+
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.throttle(0, 1000);
+
+            s.add(() => executed.push(1));
+
+            captured!();
+
+            expect(executed).toEqual([]);
+            expect(s.length).toBe(1);
+        });
+
+        it('throttle(limit, 0) creates zero interval, always allows execution', () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(1000);
+
+            let captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => { captured = task; });
+
+            s.throttle(2, 0);
+
+            s.add(() => executed.push(1));
+            s.add(() => executed.push(2));
+            s.add(() => executed.push(3));
+
+            captured!();
+
+            expect(executed).toEqual([1, 2]);
+            expect(s.length).toBe(1);
+        });
+
     });
 
 
@@ -430,6 +470,41 @@ describe('Scheduler', () => {
             await Promise.resolve();
 
             expect(flag).toBe(true);
+        });
+
+    });
+
+
+    describe('scheduler callback error', () => {
+
+        it('schedule() resets state to READY when scheduler callback throws', () => {
+            let callCount = 0,
+                captured: (() => void) | null = null,
+                executed: number[] = [],
+                q = new Queue<Task>(128),
+                s = new Scheduler(q, (task) => {
+                    callCount++;
+
+                    if (callCount === 1) {
+                        throw new Error('scheduler broke');
+                    }
+
+                    captured = task;
+                });
+
+            // First add — scheduler callback throws, state should reset to READY
+            expect(() => s.add(() => executed.push(1))).toThrow('scheduler broke');
+
+            // Second add — scheduler callback works, should reschedule successfully
+            s.add(() => executed.push(2));
+
+            expect(captured).not.toBeNull();
+
+            captured!();
+
+            // Both tasks should execute since queue retained them
+            expect(executed).toEqual([1, 2]);
+            expect(s.length).toBe(0);
         });
 
     });

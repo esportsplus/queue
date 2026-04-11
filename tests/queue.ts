@@ -120,6 +120,21 @@ describe('Queue', () => {
 
     describe('boundary', () => {
 
+        it('add() + next() with preallocate=1 forces node allocation per item', () => {
+            let q = new Queue<number>(1);
+
+            q.add(1);
+            q.add(2);
+            q.add(3);
+
+            expect(q.length).toBe(3);
+            expect(q.next()).toBe(1);
+            expect(q.next()).toBe(2);
+            expect(q.next()).toBe(3);
+            expect(q.length).toBe(0);
+            expect(q.next()).toBeUndefined();
+        });
+
         it('add() fills a node, triggers new node allocation', () => {
             let q = new Queue<number>(2);
 

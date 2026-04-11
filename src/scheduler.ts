@@ -27,10 +27,10 @@ class Scheduler {
         this.state = RUNNING;
 
         try {
-            let elapsed = Date.now() - this.lastRunAt,
+            let now = Date.now(),
                 throttle = this.throttled;
 
-            if (!throttle || throttle.interval <= elapsed) {
+            if (!throttle || throttle.interval <= now - this.lastRunAt) {
                 let q = this.queue,
                     n = throttle?.limit ?? q.length;
 
@@ -44,7 +44,7 @@ class Scheduler {
                     task();
                 }
 
-                this.lastRunAt = Date.now();
+                this.lastRunAt = now;
             }
         }
         finally {
@@ -71,7 +71,14 @@ class Scheduler {
         }
 
         this.state = SCHEDULED;
-        this.scheduler(this.task);
+
+        try {
+            this.scheduler(this.task);
+        }
+        catch (e) {
+            this.state = READY;
+            throw e;
+        }
 
         return this;
     }
