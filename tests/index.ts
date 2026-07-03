@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import api from '../src/index';
 
@@ -78,6 +78,52 @@ describe('api', () => {
             expect(scheduler).toHaveProperty('schedule');
             expect(scheduler).toHaveProperty('throttle');
             expect(scheduler.length).toBe(2);
+        });
+
+    });
+
+
+    describe('branch coverage', () => {
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('api.micro() falls back to Promise.resolve().then when queueMicrotask is unavailable', async () => {
+            vi.stubGlobal('queueMicrotask', undefined);
+
+            let executed = false,
+                scheduler = api.micro();
+
+            scheduler.add(() => { executed = true; });
+
+            expect(executed).toBe(false);
+            await Promise.resolve().then(() => Promise.resolve());
+            expect(executed).toBe(true);
+        });
+
+        it('api.raf() uses requestAnimationFrame when available', () => {
+            vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => cb(0));
+
+            let executed = false,
+                scheduler = api.raf();
+
+            scheduler.add(() => { executed = true; });
+
+            expect(executed).toBe(true);
+        });
+
+        it('api.immediate() runs tasks across multiple flushes on the same instance', async () => {
+            let count = 0,
+                scheduler = api.immediate();
+
+            scheduler.add(() => { count++; });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            scheduler.add(() => { count++; });
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(count).toBe(2);
         });
 
     });
