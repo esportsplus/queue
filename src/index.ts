@@ -35,7 +35,6 @@ api.micro = () => {
         return new Scheduler(api(), (task) => queueMicrotask(task));
     }
 
-    // Fallback: bind then() to resolved promise to preserve context
     let resolved = Promise.resolve();
 
     return new Scheduler(api(), (task) => resolved.then(task));
