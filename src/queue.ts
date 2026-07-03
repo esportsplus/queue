@@ -80,6 +80,7 @@ class Queue<T> {
         while (head !== null) {
             let next = head.next;
 
+            head.data.fill(undefined);
             this.release(head);
             head = next;
         }
