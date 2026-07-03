@@ -7,15 +7,22 @@ const api = <T>(preallocate: number = 128) => {
 };
 
 api.immediate = () => {
-    let { port1, port2 } = new MessageChannel();
+    let handler: (() => void) | null = null,
+        { port1, port2 } = new MessageChannel(),
+        port = port1 as typeof port1 & { ref?(): void; unref?(): void };
 
     return new Scheduler(
         api(),
         (task) => {
-            if (port1.onmessage !== task) {
-                port1.onmessage = task;
+            if (handler === null) {
+                handler = () => {
+                    port.unref?.();
+                    task();
+                };
+                port.onmessage = handler;
             }
 
+            port.ref?.();
             port2.postMessage(null);
         }
     );
