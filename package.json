@@ -1,8 +1,9 @@
 {
     "author": "ICJR",
     "devDependencies": {
-        "@esportsplus/typescript": "^0.29.1",
-        "vitest": "^4.1.4"
+        "@esportsplus/typescript": "^0.33.4",
+        "@types/node": "^26.4.1",
+        "vitest": "^5.0.0"
     },
     "main": "./build/index.js",
     "name": "@esportsplus/queue",

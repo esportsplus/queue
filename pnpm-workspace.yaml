@@ -1,0 +1,5 @@
+minimumReleaseAgeExclude:
+  - '@esportsplus/typescript@0.33.4'
+  - '@vitest/mocker@5.0.0'
+  - '@vitest/spy@5.0.0'
+  - vitest@5.0.0
