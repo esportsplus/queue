@@ -41,7 +41,7 @@ class Scheduler {
                         break;
                     }
 
-                    task();
+                    void task();
                 }
 
                 this.lastRunAt = now;
